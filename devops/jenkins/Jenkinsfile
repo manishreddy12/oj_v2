@@ -20,7 +20,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER  = "${env.DOCKERHUB_USERNAME ?: 'manishr09'}"
+        DOCKERHUB_USER  = "manishr09"
         IMAGE_API       = "${DOCKERHUB_USER}/codeview-api"
         IMAGE_EXEC      = "${DOCKERHUB_USER}/codeview-execution"
         IMAGE_FRONTEND  = "${DOCKERHUB_USER}/codeview-frontend"
