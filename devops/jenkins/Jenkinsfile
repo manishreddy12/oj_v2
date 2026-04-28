@@ -222,29 +222,75 @@ pipeline {
                     branch 'master'
                 }
             }
+
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-creds',
+                    credentialsId: 'docker-hub-credentials',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+
+                    // Remove stale Docker session
+                    sh 'docker logout || true'
+                    sh 'rm -f ~/.docker/config.json || true'
+
+                    // Fresh login using new token
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login \
+                        -u "$DOCKER_USER" \
+                        --password-stdin
+                    '''
+
                     sh """
                         docker push ${IMAGE_API}:${IMAGE_TAG}
                         docker push ${IMAGE_API}:latest
+
                         docker push ${IMAGE_EXEC}:${IMAGE_TAG}
                         docker push ${IMAGE_EXEC}:latest
+
                         docker push ${IMAGE_FRONTEND}:${IMAGE_TAG}
                         docker push ${IMAGE_FRONTEND}:latest
                     """
                 }
             }
+
             post {
                 always {
-                    sh 'docker logout'
+                    sh 'docker logout || true'
                 }
             }
         }
+        
+        // stage('Push Images') {
+        //     when {
+        //         anyOf {
+        //             branch 'main'
+        //             branch 'master'
+        //         }
+        //     }
+        //     steps {
+        //         withCredentials([usernamePassword(
+        //             credentialsId: 'docker-hub-creds',
+        //             usernameVariable: 'DOCKER_USER',
+        //             passwordVariable: 'DOCKER_PASS'
+        //         )]) {
+        //             sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+        //             sh """
+        //                 docker push ${IMAGE_API}:${IMAGE_TAG}
+        //                 docker push ${IMAGE_API}:latest
+        //                 docker push ${IMAGE_EXEC}:${IMAGE_TAG}
+        //                 docker push ${IMAGE_EXEC}:latest
+        //                 docker push ${IMAGE_FRONTEND}:${IMAGE_TAG}
+        //                 docker push ${IMAGE_FRONTEND}:latest
+        //             """
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             sh 'docker logout'
+        //         }
+        //     }
+        // }
 
         // ── 7. Deploy via Ansible ──────────────────────────────────────────
         stage('Deploy to Kubernetes') {
